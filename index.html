@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <title>Daftar Masuk</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: #f0f4f8; padding: 20px; }
+    .card { background: #fff; border-radius: 16px; padding: 36px 28px; max-width: 360px;
+      width: 100%; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      opacity: 0; transition: opacity 0.3s ease; }
+    .card.ready { opacity: 1; }
+    .spinner { width: 48px; height: 48px; border: 4px solid #e0e0e0;
+      border-top-color: #1a73e8; border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    h2 { font-size: 18px; font-weight: 600; color: #1a1a1a; margin-bottom: 8px; }
+    .sub { font-size: 14px; color: #666; line-height: 1.5; margin-top: 8px; }
+    .cp-badge { display: inline-block; margin-top: 12px; padding: 6px 16px;
+      background: #e8f0fe; color: #1a56db; border-radius: 20px; font-size: 13px; font-weight: 500; }
+    .zon-badge { display: inline-block; margin-top: 8px; margin-left: 6px; padding: 6px 16px;
+      background: #fef3c7; color: #92400e; border-radius: 20px; font-size: 13px; font-weight: 500; }
+    .warn { color: #b45309; background: #fffbeb; border: 1px solid #fde68a;
+      border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.5; margin-top: 16px; }
+    .btn { display: block; background: #1a73e8; color: #fff; padding: 16px 20px;
+      border-radius: 10px; text-decoration: none; font-size: 16px; font-weight: 600;
+      text-align: center; margin-top: 20px; }
+  </style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="spinner" id="spinner"></div>
+  <h2 id="title">Mendapatkan Lokasi GPS</h2>
+  <p class="sub" id="msg">Sila benarkan akses lokasi apabila diminta.</p>
+  <div id="badges"></div>
+  <div id="extra"></div>
+</div>
+
+<script>
+  var FORM_URL     = "https://docs.google.com/forms/d/e/1FAIpQLSd0Q3fL87ga26u2oq8pMWhQS4b3g9Kp0qeAE1MoNsXRq3uOuA/viewform";
+  var LOKASI_ENTRY = "entry.617145308";
+  var GPS_ENTRY    = "entry.1812480361";
+  var ZON_ENTRY    = "entry.1191365957";
+
+  var params   = new URLSearchParams(window.location.search);
+  var location = params.get("location") || "";
+  var zone     = params.get("zone")     || "";
+
+  // Show badges
+  var b = "";
+  if (location) b += '<span class="cp-badge">' + location + '</span>';
+  if (zone)     b += '<span class="zon-badge">' + zone + '</span>';
+  document.getElementById("badges").innerHTML = b;
+
+  function buildUrl(lat, lng) {
+    return FORM_URL
+      + "?" + LOKASI_ENTRY + "=" + encodeURIComponent(location)
+      + "&" + ZON_ENTRY    + "=" + encodeURIComponent(zone)
+      + "&" + GPS_ENTRY    + "=" + encodeURIComponent(lat + ", " + lng);
+  }
+
+  function buildUrlNoGps() {
+    return FORM_URL
+      + "?" + LOKASI_ENTRY + "=" + encodeURIComponent(location)
+      + "&" + ZON_ENTRY    + "=" + encodeURIComponent(zone);
+  }
+
+  function show() {
+    document.getElementById("card").classList.add("ready");
+  }
+
+  function done(url) {
+    document.getElementById("spinner").style.display = "none";
+    document.getElementById("title").textContent = "Borang Sedia";
+    document.getElementById("msg").textContent = "Tekan butang untuk buka borang.";
+    document.getElementById("extra").innerHTML =
+      '<a class="btn" href="' + url + '">Buka Borang &#8594;</a>';
+    show();
+  }
+
+  function fail(err) {
+    var msgs = {1:"Akses lokasi ditolak.", 2:"Lokasi tidak dapat dikesan.", 3:"Masa tamat."};
+    document.getElementById("spinner").style.display = "none";
+    document.getElementById("title").textContent = "GPS Tidak Tersedia";
+    document.getElementById("msg").textContent = "Borang dibuka tanpa koordinat GPS.";
+    document.getElementById("extra").innerHTML =
+      '<div class="warn">' + (msgs[err ? err.code : 0] || "GPS tidak disokong.") + '</div>'
+      + '<a class="btn" href="' + buildUrlNoGps() + '">Buka Borang &#8594;</a>';
+    show();
+  }
+
+  // Show spinner card immediately — no blink
+  show();
+
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        var lat = pos.coords.latitude.toFixed(6);
+        var lng = pos.coords.longitude.toFixed(6);
+        done(buildUrl(lat, lng));
+      },
+      function(err) { fail(err); },
+      { timeout: 8000, maximumAge: 0 }
+    );
+  } else {
+    fail(null);
+  }
+</script>
+</body>
+</html>
