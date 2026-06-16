@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <title>Daftar Masuk</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: #f0f4f8; padding: 20px; }
+    .card { background: #fff; border-radius: 16px; padding: 36px 28px; max-width: 360px;
+      width: 100%; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+    h2 { font-size: 18px; font-weight: 600; color: #1a1a1a; margin-bottom: 8px; }
+    .sub { font-size: 14px; color: #666; line-height: 1.5; margin-top: 8px; }
+    .cp-badge { display: inline-block; margin-top: 12px; padding: 6px 16px;
+      background: #e8f0fe; color: #1a56db; border-radius: 20px; font-size: 13px; font-weight: 500; }
+    .zon-badge { display: inline-block; margin-top: 8px; margin-left: 6px; padding: 6px 16px;
+      background: #fef3c7; color: #92400e; border-radius: 20px; font-size: 13px; font-weight: 500; }
+    .gps-status { font-size: 12px; color: #999; margin-top: 12px; min-height: 18px; }
+    .gps-ok { color: #16a34a; }
+    .btn { display: block; background: #1a73e8; color: #fff; padding: 18px 20px;
+      border-radius: 12px; text-decoration: none; font-size: 17px; font-weight: 700;
+      text-align: center; margin-top: 24px; }
+    .btn:active { background: #1557b0; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h2>Borang Sedia</h2>
+  <p class="sub">Tekan butang untuk daftar masuk.</p>
+  <div id="badges"></div>
+  <p class="gps-status" id="gps-status">⏳ Mendapatkan GPS...</p>
+  <a class="btn" id="btn" href="#">Buka Borang &#8594;</a>
+</div>
+
+<script>
+  var FORM_URL     = "https://docs.google.com/forms/d/e/1FAIpQLSd0Q3fL87ga26u2oq8pMWhQS4b3g9Kp0qeAE1MoNsXRq3uOuA/viewform";
+  var LOKASI_ENTRY = "entry.617145308";
+  var GPS_ENTRY    = "entry.1812480361";
+  var ZON_ENTRY    = "entry.1191365957";
+
+  var params   = new URLSearchParams(window.location.search);
+  var location = params.get("location") || "";
+  var zone     = params.get("zone")     || "";
+
+  // Show badges
+  var b = "";
+  if (location) b += '<span class="cp-badge">' + location + '</span>';
+  if (zone)     b += '<span class="zon-badge">' + zone + '</span>';
+  document.getElementById("badges").innerHTML = b;
+
+  function buildUrl(lat, lng) {
+    return FORM_URL
+      + "?" + LOKASI_ENTRY + "=" + encodeURIComponent(location)
+      + "&" + ZON_ENTRY    + "=" + encodeURIComponent(zone)
+      + "&" + GPS_ENTRY    + "=" + encodeURIComponent(lat + ", " + lng);
+  }
+
+  function buildUrlNoGps() {
+    return FORM_URL
+      + "?" + LOKASI_ENTRY + "=" + encodeURIComponent(location)
+      + "&" + ZON_ENTRY    + "=" + encodeURIComponent(zone);
+  }
+
+  // Show button immediately without GPS
+  var btn = document.getElementById("btn");
+  btn.href = buildUrlNoGps();
+
+  // Try get GPS in background, update button silently
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        var lat = pos.coords.latitude.toFixed(6);
+        var lng = pos.coords.longitude.toFixed(6);
+        btn.href = buildUrl(lat, lng);
+        var s = document.getElementById("gps-status");
+        s.textContent = "✅ GPS berjaya — " + lat + ", " + lng;
+        s.className = "gps-status gps-ok";
+      },
+      function() {
+        document.getElementById("gps-status").textContent = "⚠️ GPS tidak tersedia";
+      },
+      { timeout: 10000, maximumAge: 0 }
+    );
+  } else {
+    document.getElementById("gps-status").textContent = "⚠️ GPS tidak disokong";
+  }
+</script>
+</body>
+</html>
